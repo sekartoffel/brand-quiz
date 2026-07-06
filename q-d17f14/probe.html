@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Connectivity probe</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; display: grid; place-items: center; min-height: 90vh; background: #f5f7fa; }
+  .card { background: #fff; border-radius: 12px; padding: 32px 40px; box-shadow: 0 2px 12px rgba(0,0,0,.08); text-align: center; max-width: 420px; }
+  button { font-size: 17px; padding: 12px 28px; border: 0; border-radius: 8px; background: #2563eb; color: #fff; cursor: pointer; }
+  button:active { transform: scale(.97); }
+  #log { margin-top: 18px; font-size: 14px; line-height: 1.6; text-align: left; white-space: pre-wrap; color: #333; min-height: 60px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>Quiz connectivity probe</h2>
+  <p>Click the button. It sends two test requests out.</p>
+  <button id="go">Send test ping</button>
+  <div id="log"></div>
+</div>
+<script>
+const HOOK = 'https://webhook.site/528f839f-5f0f-4113-a2d0-c07540ab3634';
+const log = m => { document.getElementById('log').textContent += m + '\n'; };
+const ctx = () => ({
+  ts: new Date().toISOString(),
+  embedded: window.self !== window.top,
+  ua: navigator.userAgent.slice(0, 80),
+  viewport: innerWidth + 'x' + innerHeight,
+});
+document.getElementById('go').addEventListener('click', async () => {
+  document.getElementById('log').textContent = '';
+  log('JS running. embedded-in-iframe: ' + (window.self !== window.top));
+  // 1. fetch POST, JSON (needs CORS preflight)
+  try {
+    const r = await fetch(HOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind: 'fetch-json', ...ctx() }),
+    });
+    log('fetch JSON: HTTP ' + r.status);
+  } catch (e) {
+    log('fetch JSON failed: ' + e.message);
+  }
+  // 2. sendBeacon, text/plain (no preflight)
+  const ok = navigator.sendBeacon(HOOK, JSON.stringify({ kind: 'beacon', ...ctx() }));
+  log('sendBeacon queued: ' + ok);
+  log('Done — check webhook.site side.');
+});
+</script>
+</body>
+</html>
